@@ -6,7 +6,7 @@ on:
     merge_group: 
     workflow_dispatch:
     schedule:
-        - cron: "* * * * 0" # 0000 UTC Sunday
+        - cron: "0 0 * * 0" # 0000 UTC Sunday
     
 jobs:
     build:
@@ -27,6 +27,8 @@ jobs:
               uses: devcontainers/ci@v0.3
               with:
                 imageName: ghcr.io/ublue-os/devcontainer
+                refFilterForPush: |
+                    refs/heads/main
                 eventFilterForPush: |
                     merge_group
                     workflow_dispatch
