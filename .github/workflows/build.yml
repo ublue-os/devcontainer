@@ -13,8 +13,6 @@ env:
     
 jobs:
     build:
-        outputs: 
-            name: ${{ steps.name.outputs.name }}
         runs-on: ubuntu-24.04
         steps:
             - name: Checkout
@@ -63,6 +61,6 @@ jobs:
 
             - name: Sign Dev Container
               run: |
-                cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ needs.build.outputs.name }}:${{ github.sha }}
+                cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${FQ_NAME,,}:${{ github.sha }}
               env:
                 COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
