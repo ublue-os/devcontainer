@@ -1,4 +1,4 @@
-FROM quay.io/fedora/fedora:latest
+FROM quay.io/fedora/fedora:latest@sha256:68779a51b655f6bfeef08429fe31c33508f6a0d6beaf5660de094d49948a8e37
 
 ARG USERNAME="ublue"
 ENV USERNAME="${USERNAME}"
