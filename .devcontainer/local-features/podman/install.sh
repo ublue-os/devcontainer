@@ -47,8 +47,6 @@ echo "Timezone=$localtime"
 EOF
 chmod +x /usr/local/bin/timedatectl
 
-EOF
-
 # Usually only have 65536 within rootless podman
 rm -f /etc/sub{u,g}id
 echo "$USERNAME:50000:10000" >/etc/subuid
