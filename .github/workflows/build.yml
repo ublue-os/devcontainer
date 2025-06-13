@@ -26,10 +26,15 @@ jobs:
                 username: ${{ github.actor }}
                 password: ${{ github.token }}
             
+            - name: Image name
+              id: name
+              run: |
+               echo "::set-output name=FQ_NAME::${FQ_NAME,,}"
+            
             - name: Build Dev Container
               uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
               with:
-                imageName: ${FQ_NAME,,}
+                imageName: ${{ steps.name.outputs.FQ_NAME }}
                 imageTag: latest,${{ github.sha }}
                 refFilterForPush: |
                     refs/heads/main
@@ -44,6 +49,6 @@ jobs:
             - name: Sign Dev Container
               if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
               run: |
-                cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${FQ_NAME,,}:${{ github.sha }}
+                cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.FQ_NAME }}:${{ github.sha }}
               env:
                 COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
