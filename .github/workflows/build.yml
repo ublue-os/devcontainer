@@ -3,13 +3,18 @@ on:
     pull_request:
         branches:
             - main
-    merge_group: 
+    merge_group:
     workflow_dispatch:
     schedule:
         - cron: "0 0 * * 0" # 0000 UTC Sunday
+
+env:
+    FQ_NAME: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
     
 jobs:
     build:
+        outputs: 
+            name: ${{ steps.name.outputs.name }}
         runs-on: ubuntu-24.04
         steps:
             - name: Checkout
@@ -23,13 +28,41 @@ jobs:
                 username: ${{ github.actor }}
                 password: ${{ github.token }}
             
+            - name: Image name
+              id: name
+              run: |
+               echo "FQ_NAME=${FQ_NAME,,}" >> "$GITHUB_OUTPUT"
+            
             - name: Build Dev Container
+              id: build
               uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
               with:
-                imageName: ghcr.io/ublue-os/devcontainer
+                imageName: ${{ steps.name.outputs.FQ_NAME }}
+                imageTag: latest,${{ github.sha }}
                 refFilterForPush: |
                     refs/heads/main
                 eventFilterForPush: |
                     merge_group
                     workflow_dispatch
                     schedule
+                
+    sign:
+        if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
+        needs: ["build"]
+        runs-on: ubuntu-24.04
+        steps:
+            - name: Install Cosign
+              uses: sigstore/cosign-installer@v3.8.2
+            
+            - name: Login to GHCR
+              uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+              with:
+                registry: ghcr.io
+                username: ${{ github.actor }}
+                password: ${{ github.token }}
+
+            - name: Sign Dev Container
+              run: |
+                cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ needs.build.outputs.name }}:${{ github.sha }}
+              env:
+                COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
