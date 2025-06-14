@@ -29,6 +29,7 @@ elif [ "${USERNAME}" = "none" ] || ! id -u "${USERNAME}" >/dev/null 2>&1; then
 fi
 
 dnf5 install -y \
+    buildah \
     fuse-overlayfs \
     podman \
     podman-machine \
