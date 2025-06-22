@@ -24,7 +24,7 @@ elif [[ "$(uname -m)" =~ aarch64 ]]; then
     RPMS+=(grub2-efi-aa64-modules)
 fi
 
-dnf5 install -y "${PRMS[@]}"
+dnf5 install -y "${RPMS[@]}"
 
 # Cleanup
 dnf5 clean all
