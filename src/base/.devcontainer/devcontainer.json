@@ -4,25 +4,17 @@
     "name": "ublue-devcontainer",
     "build": {
         "dockerfile": "Containerfile",
-        "context": ".",
-        "args": {
-            "USERNAME": "ublue"
-        }
+        "context": "."
     },
     "features": {
         "ghcr.io/devcontainers/features/common-utils:2": {
             "username": "ublue",
-            // Change these to your UID/GID if your user is not 1000
-            "userUid": "1000",
-            "userGid": "1000",
             "installZsh": false,
             "installOhMyZsh": false,
             "installOhMyZshConfig": false
         },
         // Podman
-        "./local-features/podman": "",
-        // Tools
-        "./local-features/tools": ""
+        "./local-features/podman": {}
     },
     "customizations": {
         "vscode": {
@@ -35,7 +27,10 @@
             ]
         }
     },
-    "runArgs": ["--name", "devcontainer-${containerWorkspaceFolderBasename}"],
+    "runArgs": [
+        "--name",
+        "devcontainer-${containerWorkspaceFolderBasename}"
+    ],
     "remoteUser": "ublue",
     "containerUser": "ublue"
 }

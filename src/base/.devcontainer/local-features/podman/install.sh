@@ -33,10 +33,11 @@ dnf5 install -y \
     fuse-overlayfs \
     podman \
     podman-machine \
-    podman-remote
+    podman-remote \
+    skopeo
 
 # Workaround timedatectl being broken for podman-machine
-cat > /usr/local/bin/timedatectl <<'EOF'
+cat >/usr/local/bin/timedatectl <<'EOF'
 #!/usr/bin/bash
 if [[ -L /etc/localtime ]]; then
     localtime="$(realpath /etc/localtime)"

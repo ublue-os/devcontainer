@@ -1,0 +1,6 @@
+{
+    "$schema": "https://raw.githubusercontent.com/devcontainers/spec/refs/heads/main/schemas/devContainerFeature.schema.json",
+    "id": "tools",
+    "name": "Configure Titanoboa RPMs",
+    "version": "latest"
+}
