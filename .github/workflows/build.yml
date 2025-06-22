@@ -12,7 +12,7 @@ env:
   FQ_NAME: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
 
 jobs:
-  build-base:
+  build:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
