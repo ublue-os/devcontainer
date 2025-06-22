@@ -3,7 +3,7 @@
     "$schema": "https://raw.githubusercontent.com/devcontainers/spec/refs/heads/main/schemas/devContainer.schema.json",
     "name": "ublue-devcontainer",
     "build": {
-        "dockerfile": "Containerfile",
+        "dockerfile": "Dockerfile",
         "context": "."
     },
     "features": {
