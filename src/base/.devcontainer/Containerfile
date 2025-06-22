@@ -43,3 +43,12 @@ macadam completion bash >/etc/bash_completion.d/macadam.sh
 # Cleanup
 dnf5 clean all
 RUNEOF
+
+LABEL \
+    "name"="devcontainer" \
+    "org.opencontainers.image.name"="devcontainer" \
+    "org.opencontainers.image.url"="https://github.com/ublue-os/devcontainer" \
+    "org.opencontainers.image.vendor"="Universal Blue" \
+    "org.opencontainers.image.version"="base" \
+    "vendor"="Universal Blue" \
+    "version"="base"
