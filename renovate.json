@@ -1,13 +1,17 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:best-practices",
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'local>ublue-os/renovate-config',
   ],
-  "packageRules": [
+  packageRules: [
     {
-      "automerge": true,
-      "matchManagers": ["dockerfile"],
-      "matchUpdateTypes": ["digest"]
-    }
-  ]
+      automerge: true,
+      matchManagers: [
+        'dockerfile',
+      ],
+      matchUpdateTypes: [
+        'digest',
+      ],
+    },
+  ],
 }
