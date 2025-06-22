@@ -15,7 +15,7 @@ RPMS=(
 )
 
 if [[ $(uname -m) =~ x86_64 ]]; then
-    RPMS++(
+    RPMS+=(
         grub2-efi-x64
         grub2-efi-x64-cdboot
         grub2-efi-x64-modules
