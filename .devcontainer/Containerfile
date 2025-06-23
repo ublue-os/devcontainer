@@ -1,5 +1,0 @@
-FROM quay.io/fedora/fedora:latest@sha256:1c05f4201270e9e39468b1da3492498bf48dd66c18b53eae256f35507c6b3fa8
-
-ARG USERNAME="ublue"
-ENV USERNAME="${USERNAME}"
-ENV SET_X=1

@@ -1,66 +1,83 @@
-name: 'build'
+name: "build"
 on:
-    pull_request:
-        branches:
-            - main
-    merge_group:
-    workflow_dispatch:
-    schedule:
-        - cron: "0 0 * * 0" # 0000 UTC Sunday
+  pull_request:
+    branches:
+      - main
+  merge_group:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 0" # 0000 UTC Sunday
 
 env:
-    FQ_NAME: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
-    
-jobs:
-    build:
-        runs-on: ubuntu-24.04
-        steps:
-            - name: Checkout
-              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-            
-            - name: Login to GHCR
-              if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
-              uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
-              with:
-                registry: ghcr.io
-                username: ${{ github.actor }}
-                password: ${{ github.token }}
-            
-            - name: Image name
-              id: name
-              run: |
-               echo "FQ_NAME=${FQ_NAME,,}" >> "$GITHUB_OUTPUT"
-            
-            - name: Build Dev Container
-              id: build
-              uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
-              with:
-                imageName: ${{ steps.name.outputs.FQ_NAME }}
-                imageTag: latest,${{ github.sha }}
-                refFilterForPush: |
-                    refs/heads/main
-                eventFilterForPush: |
-                    merge_group
-                    workflow_dispatch
-                    schedule
-                
-    sign:
-        if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
-        needs: ["build"]
-        runs-on: ubuntu-24.04
-        steps:
-            - name: Install Cosign
-              uses: sigstore/cosign-installer@fb28c2b6339dcd94da6e4cbcbc5e888961f6f8c3 # v3.9.0
-            
-            - name: Login to GHCR
-              uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
-              with:
-                registry: ghcr.io
-                username: ${{ github.actor }}
-                password: ${{ github.token }}
+  FQ_NAME: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
 
-            - name: Sign Dev Container
-              run: |
-                cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${FQ_NAME,,}:${{ github.sha }}
-              env:
-                COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Login to GHCR
+        if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Image name
+        id: name
+        run: |
+          echo "FQ_NAME=${FQ_NAME,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Build Dev Container
+        id: build
+        uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
+        with:
+          subfolder: ./src/base
+          imageName: ${{ steps.name.outputs.FQ_NAME }}
+          imageTag: latest,${{ github.sha }}
+          refFilterForPush: |
+            refs/heads/main
+          eventFilterForPush: |
+            merge_group
+            workflow_dispatch
+            schedule
+
+      - name: Build Titanoboa Dev Container
+        id: build-titanoboa
+        uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
+        with:
+          cacheFrom: ghcr.io/ublue-os/devcontainer:latest
+          subfolder: ./src/titanoboa
+          imageName: ${{ steps.name.outputs.FQ_NAME }}
+          imageTag: titanoboa, titanoboa-${{ github.sha }}
+          refFilterForPush: |
+            refs/heads/main
+          eventFilterForPush: |
+            merge_group
+            workflow_dispatch
+            schedule
+
+  sign:
+    if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
+    needs: ["build"]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@fb28c2b6339dcd94da6e4cbcbc5e888961f6f8c3 # v3.9.0
+
+      - name: Login to GHCR
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Sign Dev Containers
+        run: |
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${FQ_NAME,,}:${{ github.sha }}
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${FQ_NAME,,}:titanoboa-${{ github.sha }}
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}

@@ -1,0 +1,54 @@
+FROM quay.io/fedora/fedora:latest@sha256:1c05f4201270e9e39468b1da3492498bf48dd66c18b53eae256f35507c6b3fa8
+
+ENV USERNAME="ublue"
+
+RUN --mount=type=tmpfs,dst=/var \
+    --mount=type=tmpfs,dst=/tmp \
+    bash <<'RUNEOF'
+set -eoux pipefail
+dnf5 config-manager setopt install_weak_deps=False
+dnf5 install -y \
+    ShellCheck \
+    cpp \
+    just \
+    openssl \
+    sbsigntools \
+    shfmt \
+    socat \
+    tmux \
+    yq \
+    zstd
+
+# syft
+curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/bin
+
+# cosign
+while [[ -z "${COSIGN_VERSION:-}" ]]; do
+    COSIGN_VERSION=$(curl https://api.github.com/repos/sigstore/cosign/releases/latest | grep tag_name | cut -d : -f2 | tr -d "v\", ") || (sleep 30)
+done
+dnf5 install -y "https://github.com/sigstore/cosign/releases/latest/download/cosign-${COSIGN_VERSION}-1.$(rpm -E %_arch).rpm"
+
+# macadam
+if [[ "$(rpm -E %_arch)" =~ x86_64 ]]; then
+    curl --retry 3 -Lo "/usr/bin/macadam" "https://github.com/crc-org/macadam/releases/latest/download/macadam-linux-amd64"
+elif [[ "$(rpm -E %_arch)" =~ aarch64 ]]; then
+    curl --retry 3 -Lo "/usr/bin/macadam" "https://github.com/crc-org/macadam/releases/latest/download/macadam-linux-arm64"
+else
+    echo "Unsupported Arch" >&2
+    exit 1
+fi
+chmod +x /usr/bin/macadam
+macadam completion bash >/etc/bash_completion.d/macadam.sh
+
+# Cleanup
+dnf5 clean all
+RUNEOF
+
+LABEL \
+    "name"="devcontainer" \
+    "org.opencontainers.image.name"="devcontainer" \
+    "org.opencontainers.image.url"="https://github.com/ublue-os/devcontainer" \
+    "org.opencontainers.image.vendor"="Universal Blue" \
+    "org.opencontainers.image.version"="base" \
+    "vendor"="Universal Blue" \
+    "version"="base"
