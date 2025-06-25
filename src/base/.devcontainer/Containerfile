@@ -7,6 +7,8 @@ RUN --mount=type=tmpfs,dst=/var \
     bash <<'RUNEOF'
 set -eoux pipefail
 dnf5 config-manager setopt install_weak_deps=False
+dnf5 copr -y enable ublue-os/packages
+
 dnf5 install -y \
     ShellCheck \
     cpp \
@@ -16,6 +18,7 @@ dnf5 install -y \
     shfmt \
     socat \
     tmux \
+    ublue-os-signing \
     yq \
     zstd
 
@@ -40,7 +43,9 @@ fi
 chmod +x /usr/bin/macadam
 macadam completion bash >/etc/bash_completion.d/macadam.sh
 
+
 # Cleanup
+dnf5 copr -y disable ublue-os/packages
 dnf5 clean all
 RUNEOF
 
