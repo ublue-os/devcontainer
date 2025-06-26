@@ -12,6 +12,7 @@ dnf5 copr -y enable ublue-os/packages
 dnf5 install -y \
     ShellCheck \
     cpp \
+    golang-oras \
     just \
     openssl \
     sbsigntools \
