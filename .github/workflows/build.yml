@@ -37,6 +37,11 @@ jobs:
       - name: Lowercase Image Repo
         id: name
         run: echo "IMAGE_REPO=${IMAGE_REPO,,}" >> "$GITHUB_OUTPUT"
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
 
       - name: Build and (optionally) Push with Dev Containers CLI
         uses: devcontainers/ci@v0.3
