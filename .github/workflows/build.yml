@@ -13,7 +13,10 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    runs-on: 
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -35,9 +38,10 @@ jobs:
         id: build
         uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
         with:
+          platform: linux/${{ matrix.arch }}
           subfolder: ./src/base
           imageName: ${{ steps.name.outputs.FQ_NAME }}
-          imageTag: latest,${{ github.sha }}
+          imageTag: latest-${{ matrix.arch }},${{ github.sha }}-${{ matrix.arch }}
           refFilterForPush: |
             refs/heads/main
           eventFilterForPush: |
@@ -49,10 +53,11 @@ jobs:
         id: build-titanoboa
         uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
         with:
+          platform: linux/${{ matrix.arch }}
           cacheFrom: ghcr.io/ublue-os/devcontainer:latest
           subfolder: ./src/titanoboa
           imageName: ${{ steps.name.outputs.FQ_NAME }}
-          imageTag: titanoboa, titanoboa-${{ github.sha }}
+          imageTag: titanoboa-${{ matrix.arch }},titanoboa-${{ github.sha }}-${{ matrix.arch }}
           refFilterForPush: |
             refs/heads/main
           eventFilterForPush: |
@@ -63,6 +68,9 @@ jobs:
   sign:
     if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
     needs: ["build"]
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
     runs-on: ubuntu-24.04
     steps:
       - name: Install Cosign
@@ -77,7 +85,24 @@ jobs:
 
       - name: Sign Dev Containers
         run: |
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${FQ_NAME,,}:${{ github.sha }}
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${FQ_NAME,,}:titanoboa-${{ github.sha }}
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${FQ_NAME,,}:${{ github.sha }}-${{ matrix.arch }}
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${FQ_NAME,,}:titanoboa-${{ github.sha }}-${{ matrix.arch }}
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+  manifest:
+    if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
+    needs: ["sign"]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Combine manifests
+        run: |
+          for tag in "${{ github.sha }}" latest titanoboa; do
+            docker manifest create ${{ env.FQ_NAME }}:${tag} --amend ${{ env.FQ_NAME }}:${tag}-amd64 --amend ${{ env.FQ_NAME }}:${tag}-arm64
+            docker manifest push ${{ env.FQ_NAME }}:${tag}
+          done
