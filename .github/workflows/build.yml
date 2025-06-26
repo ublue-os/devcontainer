@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [amd64, arm64]
-    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-24.04' || 'ubuntu-latest-4-cores-arm64' }}
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm64' }}
     permissions:
       contents: read
       packages: write
@@ -34,23 +34,29 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Lowercase Image Repo
+      - name: Image name
         id: name
-        run: echo "IMAGE_REPO=${IMAGE_REPO,,}" >> "$GITHUB_OUTPUT"
-      
+        run: |
+          echo "FQ_NAME=${FQ_NAME,,}" >> "$GITHUB_OUTPUT"   
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker-container
 
-      - name: Build and Push Base Dev Container
-        uses: devcontainers/ci@v0.3
+      - name: Build Dev Container
+        uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
         with:
           subFolder: ./src/base
           imageName: ${{ steps.name.outputs.IMAGE_REPO }}
           imageTag: base-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
           refFilterForPush: 'refs/heads/main'
+          eventFilterForPush: |
+            merge_group
+            workflow_dispatch
+            schedule
+          
 
       - name: Build and Push Titanoboa Dev Container
         uses: devcontainers/ci@v0.3
@@ -60,6 +66,10 @@ jobs:
           imageTag: titanoboa-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
           refFilterForPush: 'refs/heads/main'
+          eventFilterForPush: |
+            merge_group
+            workflow_dispatch
+            schedule
 
 
   sign:
