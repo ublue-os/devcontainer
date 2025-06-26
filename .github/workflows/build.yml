@@ -91,9 +91,11 @@ jobs:
         with:
           driver: docker-container
       
-      - name: use base image
+      - name: Use base image
         run: |
-          jq '.image = "${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-${{ matrix.arch }}"' ./src/titanoboa/.devcontainer/devcontainer.json > tmp.json && mv tmp.json ./src/titanoboa/.devcontainer/devcontainer.json
+          grep -v '^\s*//' ./src/titanoboa/.devcontainer/devcontainer.json | \
+          jq --arg img "$FQ_NAME:base-${{ github.sha }}-${{ matrix.arch }}" '.image = $img' > tmp.json \
+          && mv tmp.json ./src/titanoboa/.devcontainer/devcontainer.json
 
       - name: Build Titanoboa Dev Container
         id: build-titanoboa
@@ -141,8 +143,8 @@ jobs:
 
       - name: Sign Images
         run: |
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-${{ matrix.arch }}
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-${{ matrix.arch }} || true
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.FQ_NAME }}:base-${{ github.sha }}-${{ matrix.arch }}
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ github.sha }}-${{ matrix.arch }} || true
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
 
