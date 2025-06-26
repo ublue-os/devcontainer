@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [amd64, arm64]
-    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-24.04' || 'ubuntu-latest-4-cores-arm64' }}
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm64' }}
     permissions:
       contents: read
       packages: write
@@ -51,6 +51,10 @@ jobs:
           imageTag: base-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
           refFilterForPush: 'refs/heads/main'
+          eventFilterForPush: |
+            merge_group
+            workflow_dispatch
+            schedule
 
       - name: Build and Push Titanoboa Dev Container
         uses: devcontainers/ci@v0.3
@@ -60,6 +64,10 @@ jobs:
           imageTag: titanoboa-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
           refFilterForPush: 'refs/heads/main'
+          eventFilterForPush: |
+            merge_group
+            workflow_dispatch
+            schedule
 
 
   sign:
