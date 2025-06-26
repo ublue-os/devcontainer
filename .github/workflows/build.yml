@@ -42,7 +42,8 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           subFolder: ./src/base
-          imageName: ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-${{ matrix.arch }}
+          imageName: ${{ steps.name.outputs.IMAGE_REPO }}
+          imageTag: base-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
           push: ${{ github.event_name != 'pull_request' }}
 
@@ -50,7 +51,8 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           subFolder: ./src/titanoboa
-          imageName: ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-${{ matrix.arch }}
+          imageName: ${{ steps.name.outputs.IMAGE_REPO }}
+          imageTag: titanoboa-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
           push: ${{ github.event_name != 'pull_request' }}
           buildArgs: |
