@@ -7,29 +7,25 @@ on:
   merge_group:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * 0" # 0000 UTC on Sunday
+    - cron: "0 0 * * 0"
 
-# Use a single env var for the base repository name.
-# It will be lowercased in a later step for OCI compliance.
 env:
   IMAGE_REPO: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
 
 jobs:
   build:
     strategy:
-      fail-fast: false # Don't cancel all jobs if one architecture fails
+      fail-fast: false
       matrix:
         arch: [amd64, arm64]
-    # Use standard GitHub-hosted runners for each architecture
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-24.04' || 'ubuntu-latest-4-cores-arm64' }}
     permissions:
       contents: read
-      packages: write # Required to push to GHCR
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Login is only needed when we are going to push images
       - name: Login to GHCR
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
@@ -38,39 +34,29 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Lowercase Image Repo
         id: name
         run: echo "IMAGE_REPO=${IMAGE_REPO,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Build Base Container
+      - name: Build and (optionally) Push with Dev Containers CLI
         uses: devcontainers/ci@v0.3
         with:
+          subFolder: ./src/base
+          imageName: ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
-          subfolder: ./src/base
-          imageName: ${{ steps.name.outputs.IMAGE_REPO }}
-          # Create a unique, predictable tag for this specific architecture build
-          imageTag: base-${{ github.sha }}-${{ matrix.arch }}
-          # Only push on merge/dispatch/schedule events, not on pull requests
-          push: ${{ github.event_name != 'pull_request' && 'always' || 'never' }}
+          push: ${{ github.event_name != 'pull_request' }}
 
-      - name: Build Titanoboa Container
+      - name: Build and (optionally) Push Titanoboa with Dev Containers CLI
         uses: devcontainers/ci@v0.3
         with:
+          subFolder: ./src/titanoboa
+          imageName: ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
-          # Speed up the build by caching from the 'base' image we just built for this arch
-          cacheFrom: ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-${{ matrix.arch }}
-          subfolder: ./src/titanoboa
-          imageName: ${{ steps.name.outputs.IMAGE_REPO }}
-          # Create a unique, predictable tag for this specific architecture build
-          imageTag: titanoboa-${{ github.sha }}-${{ matrix.arch }}
-          # Only push on merge/dispatch/schedule events, not on pull requests
-          push: ${{ github.event_name != 'pull_request' && 'always' || 'never' }}
+          push: ${{ github.event_name != 'pull_request' }}
+          buildArgs: |
+            BASE_IMAGE=${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-${{ matrix.arch }}
 
   sign:
-    # Run this job only for push events
     if: github.event_name != 'pull_request'
     needs: ["build"]
     strategy:
@@ -80,8 +66,8 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      packages: write # Required to push signatures
-      id-token: write # Required for keyless signing with Sigstore
+      packages: write
+      id-token: write
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3
@@ -102,18 +88,15 @@ jobs:
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-${{ matrix.arch }}
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-${{ matrix.arch }}
         env:
-          # Assumes you have a COSIGN_PRIVATE_KEY secret in your repository
-          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
 
   manifest:
-    # Run this job only for push events
     if: github.event_name != 'pull_request'
-    # This job runs once after all arch-specific images are built and signed
     needs: ["sign"]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      packages: write # Required to push the final manifest
+      packages: write
     steps:
       - name: Login to GHCR
         uses: docker/login-action@v3
