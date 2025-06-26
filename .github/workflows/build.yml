@@ -46,7 +46,7 @@ jobs:
         run: echo "IMAGE_REPO=${IMAGE_REPO,,}" >> "$GITHUB_OUTPUT"
 
       - name: Build Base Container
-        uses: devcontainers/ci@v0.3
+        uses: devcontainers/ci@v0.6
         with:
           platform: linux/${{ matrix.arch }}
           subfolder: ./src/base
@@ -57,7 +57,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' && 'always' || 'never' }}
 
       - name: Build Titanoboa Container
-        uses: devcontainers/ci@v0.3
+        uses: devcontainers/ci@v0.6
         with:
           platform: linux/${{ matrix.arch }}
           # Speed up the build by caching from the 'base' image we just built for this arch
@@ -129,10 +129,6 @@ jobs:
       - name: Create and Push Multi-Arch Manifests
         run: |
           set -ex
-
-          # --- Create and push the 'base/dev' image manifest ---
-          # This manifest combines the two arch-specific 'base' images into one multi-arch image.
-          # It gets two tags: 'latest' and the commit SHA.
           docker manifest create ${{ steps.name.outputs.IMAGE_REPO }}:latest \
             --amend ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-amd64 \
             --amend ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-arm64
@@ -143,9 +139,6 @@ jobs:
             --amend ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-arm64
           docker manifest push ${{ steps.name.outputs.IMAGE_REPO }}:${{ github.sha }}
 
-          # --- Create and push the 'titanoboa' image manifest ---
-          # This manifest combines the two arch-specific 'titanoboa' images into a second multi-arch image.
-          # It gets two tags: 'titanoboa' and 'titanoboa-SHA'.
           docker manifest create ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa \
             --amend ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-amd64 \
             --amend ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-arm64
