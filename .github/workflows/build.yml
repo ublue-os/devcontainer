@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [amd64, arm64]
-    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm64' }}
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
     permissions:
       contents: read
       packages: write
@@ -48,7 +48,7 @@ jobs:
         uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
         with:
           subFolder: ./src/base
-          imageName: ${{ steps.name.outputs.IMAGE_REPO }}
+          imageName: ${{ steps.name.outputs.FQ_NAME }}
           imageTag: base-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
           refFilterForPush: 'refs/heads/main'
@@ -62,7 +62,7 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           subFolder: ./src/titanoboa
-          imageName: ${{ steps.name.outputs.IMAGE_REPO }}
+          imageName: ${{ steps.name.outputs.FQ_NAME }}
           imageTag: titanoboa-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
           refFilterForPush: 'refs/heads/main'
@@ -99,7 +99,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Sign Architecture-Specific Images
+      - name: Sign Images
         run: |
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-${{ matrix.arch }}
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-${{ matrix.arch }}
@@ -123,27 +123,27 @@ jobs:
 
       - name: Lowercase Image Repo
         id: name
-        run: echo "IMAGE_REPO=${IMAGE_REPO,,}" >> "$GITHUB_OUTPUT"
+        run: echo "FQ_NAME=${FQ_NAME,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Create and Push Multi-Arch Manifests
+      - name: Push Manifests
         run: |
           set -ex
-          docker manifest create ${{ steps.name.outputs.IMAGE_REPO }}:latest \
-            --amend ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-amd64 \
-            --amend ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-arm64
-          docker manifest push ${{ steps.name.outputs.IMAGE_REPO }}:latest
+          docker manifest create ${{ steps.name.outputs.FQ_NAME }}:latest \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:base-${{ github.sha }}-amd64 \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:base-${{ github.sha }}-arm64
+          docker manifest push ${{ steps.name.outputs.FQ_NAME }}:latest
 
-          docker manifest create ${{ steps.name.outputs.IMAGE_REPO }}:${{ github.sha }} \
-            --amend ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-amd64 \
-            --amend ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-arm64
-          docker manifest push ${{ steps.name.outputs.IMAGE_REPO }}:${{ github.sha }}
+          docker manifest create ${{ steps.name.outputs.FQ_NAME }}:${{ github.sha }} \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:base-${{ github.sha }}-amd64 \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:base-${{ github.sha }}-arm64
+          docker manifest push ${{ steps.name.outputs.FQ_NAME }}:${{ github.sha }}
 
-          docker manifest create ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa \
-            --amend ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-amd64 \
-            --amend ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-arm64
-          docker manifest push ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa
+          docker manifest create ${{ steps.name.outputs.FQ_NAME }}:titanoboa \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:t itanoboa-${{ github.sha }}-amd64 \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ github.sha }}-arm64
+          docker manifest push ${{ steps.name.outputs.FQ_NAME }}:titanoboa
 
-          docker manifest create ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }} \
-            --amend ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-amd64 \
-            --amend ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-arm64
-          docker manifest push ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}
+          docker manifest create ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ github.sha }} \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ github.sha }}-amd64 \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ github.sha }}-arm64
+          docker manifest push ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ github.sha }}
