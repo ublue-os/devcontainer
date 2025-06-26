@@ -46,7 +46,7 @@ jobs:
         run: echo "IMAGE_REPO=${IMAGE_REPO,,}" >> "$GITHUB_OUTPUT"
 
       - name: Build Base Container
-        uses: devcontainers/ci@v0.6
+        uses: devcontainers/ci@v0.3
         with:
           platform: linux/${{ matrix.arch }}
           subfolder: ./src/base
@@ -57,7 +57,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' && 'always' || 'never' }}
 
       - name: Build Titanoboa Container
-        uses: devcontainers/ci@v0.6
+        uses: devcontainers/ci@v0.3
         with:
           platform: linux/${{ matrix.arch }}
           # Speed up the build by caching from the 'base' image we just built for this arch
