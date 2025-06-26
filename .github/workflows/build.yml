@@ -1,4 +1,5 @@
-name: "build"
+name: "Build and Push Containers"
+
 on:
   pull_request:
     branches:
@@ -6,24 +7,32 @@ on:
   merge_group:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * 0" # 0000 UTC Sunday
+    - cron: "0 0 * * 0" # 0000 UTC on Sunday
 
+# Use a single env var for the base repository name.
+# It will be lowercased in a later step for OCI compliance.
 env:
-  FQ_NAME: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+  IMAGE_REPO: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
 
 jobs:
   build:
     strategy:
+      fail-fast: false # Don't cancel all jobs if one architecture fails
       matrix:
         arch: [amd64, arm64]
-    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }} 
+    # Use standard GitHub-hosted runners for each architecture
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-24.04' || 'ubuntu-latest-4-cores-arm64' }}
+    permissions:
+      contents: read
+      packages: write # Required to push to GHCR
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@v4
 
+      # Login is only needed when we are going to push images
       - name: Login to GHCR
-        if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -32,80 +41,117 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Image name
+      - name: Lowercase Image Repo
         id: name
-        run: |
-          echo "FQ_NAME=${FQ_NAME,,}" >> "$GITHUB_OUTPUT"
+        run: echo "IMAGE_REPO=${IMAGE_REPO,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Build Dev Container
-        id: build
-        uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
+      - name: Build Base Container
+        uses: devcontainers/ci@v0.3
         with:
           platform: linux/${{ matrix.arch }}
           subfolder: ./src/base
-          imageName: ${{ steps.name.outputs.FQ_NAME }}
-          imageTag: latest-${{ matrix.arch }},${{ github.sha }}-${{ matrix.arch }}
-          refFilterForPush: |
-            refs/heads/main
-          eventFilterForPush: |
-            merge_group
-            workflow_dispatch
-            schedule
+          imageName: ${{ steps.name.outputs.IMAGE_REPO }}
+          # Create a unique, predictable tag for this specific architecture build
+          imageTag: base-${{ github.sha }}-${{ matrix.arch }}
+          # Only push on merge/dispatch/schedule events, not on pull requests
+          push: ${{ github.event_name != 'pull_request' && 'always' || 'never' }}
 
-      - name: Build Titanoboa Dev Container
-        id: build-titanoboa
-        uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
+      - name: Build Titanoboa Container
+        uses: devcontainers/ci@v0.3
         with:
           platform: linux/${{ matrix.arch }}
-          cacheFrom: ghcr.io/ublue-os/devcontainer:latest
+          # Speed up the build by caching from the 'base' image we just built for this arch
+          cacheFrom: ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-${{ matrix.arch }}
           subfolder: ./src/titanoboa
-          imageName: ${{ steps.name.outputs.FQ_NAME }}
-          imageTag: titanoboa-${{ matrix.arch }},titanoboa-${{ github.sha }}-${{ matrix.arch }}
-          refFilterForPush: |
-            refs/heads/main
-          eventFilterForPush: |
-            merge_group
-            workflow_dispatch
-            schedule
+          imageName: ${{ steps.name.outputs.IMAGE_REPO }}
+          # Create a unique, predictable tag for this specific architecture build
+          imageTag: titanoboa-${{ github.sha }}-${{ matrix.arch }}
+          # Only push on merge/dispatch/schedule events, not on pull requests
+          push: ${{ github.event_name != 'pull_request' && 'always' || 'never' }}
 
   sign:
-    if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
+    # Run this job only for push events
+    if: github.event_name != 'pull_request'
     needs: ["build"]
     strategy:
+      fail-fast: false
       matrix:
         arch: [amd64, arm64]
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write # Required to push signatures
+      id-token: write # Required for keyless signing with Sigstore
     steps:
       - name: Install Cosign
-        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
+        uses: sigstore/cosign-installer@v3
+
+      - name: Lowercase Image Repo
+        id: name
+        run: echo "IMAGE_REPO=${IMAGE_REPO,,}" >> "$GITHUB_OUTPUT"
 
       - name: Login to GHCR
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Sign Dev Containers
+      - name: Sign Architecture-Specific Images
         run: |
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${FQ_NAME,,}:${{ github.sha }}-${{ matrix.arch }}
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${FQ_NAME,,}:titanoboa-${{ github.sha }}-${{ matrix.arch }}
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-${{ matrix.arch }}
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-${{ matrix.arch }}
         env:
+          # Assumes you have a COSIGN_PRIVATE_KEY secret in your repository
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+
   manifest:
-    if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
+    # Run this job only for push events
+    if: github.event_name != 'pull_request'
+    # This job runs once after all arch-specific images are built and signed
     needs: ["sign"]
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write # Required to push the final manifest
     steps:
       - name: Login to GHCR
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      - name: Combine manifests
+
+      - name: Lowercase Image Repo
+        id: name
+        run: echo "IMAGE_REPO=${IMAGE_REPO,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Create and Push Multi-Arch Manifests
         run: |
-          for tag in "${{ github.sha }}" latest titanoboa; do
-            docker manifest create ${{ env.FQ_NAME }}:${tag} --amend ${{ env.FQ_NAME }}:${tag}-amd64 --amend ${{ env.FQ_NAME }}:${tag}-arm64
-            docker manifest push ${{ env.FQ_NAME }}:${tag}
-          done
+          set -ex
+
+          # --- Create and push the 'base/dev' image manifest ---
+          # This manifest combines the two arch-specific 'base' images into one multi-arch image.
+          # It gets two tags: 'latest' and the commit SHA.
+          docker manifest create ${{ steps.name.outputs.IMAGE_REPO }}:latest \
+            --amend ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-amd64 \
+            --amend ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-arm64
+          docker manifest push ${{ steps.name.outputs.IMAGE_REPO }}:latest
+
+          docker manifest create ${{ steps.name.outputs.IMAGE_REPO }}:${{ github.sha }} \
+            --amend ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-amd64 \
+            --amend ${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-arm64
+          docker manifest push ${{ steps.name.outputs.IMAGE_REPO }}:${{ github.sha }}
+
+          # --- Create and push the 'titanoboa' image manifest ---
+          # This manifest combines the two arch-specific 'titanoboa' images into a second multi-arch image.
+          # It gets two tags: 'titanoboa' and 'titanoboa-SHA'.
+          docker manifest create ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa \
+            --amend ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-amd64 \
+            --amend ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-arm64
+          docker manifest push ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa
+
+          docker manifest create ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }} \
+            --amend ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-amd64 \
+            --amend ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}-arm64
+          docker manifest push ${{ steps.name.outputs.IMAGE_REPO }}:titanoboa-${{ github.sha }}
