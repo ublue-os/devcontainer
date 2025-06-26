@@ -50,7 +50,7 @@ jobs:
           imageName: ${{ steps.name.outputs.IMAGE_REPO }}
           imageTag: base-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
-          push: true
+          refFilterForPush: 'refs/heads/main'
 
       - name: Build and Push Titanoboa Dev Container
         uses: devcontainers/ci@v0.3
@@ -59,7 +59,8 @@ jobs:
           imageName: ${{ steps.name.outputs.IMAGE_REPO }}
           imageTag: titanoboa-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
-          push: true
+          refFilterForPush: 'refs/heads/main'
+
 
   sign:
     if: github.event_name != 'pull_request'
