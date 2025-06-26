@@ -12,8 +12,15 @@ env:
   FQ_NAME: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
 
 jobs:
-  build:
-    runs-on: ubuntu-24.04
+  build-base:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -31,28 +38,67 @@ jobs:
         run: |
           echo "FQ_NAME=${FQ_NAME,,}" >> "$GITHUB_OUTPUT"
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3
+        with:
+          driver: docker-container
+
       - name: Build Dev Container
-        id: build
+        id: build-base
         uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
         with:
-          subfolder: ./src/base
+          subFolder: ./src/base
           imageName: ${{ steps.name.outputs.FQ_NAME }}
-          imageTag: latest,${{ github.sha }}
+          imageTag: base-${{ github.sha }}-${{ matrix.arch }}
+          platform: linux/${{ matrix.arch }}
           refFilterForPush: |
             refs/heads/main
           eventFilterForPush: |
             merge_group
             workflow_dispatch
             schedule
+            
+  build-titanoboa:
+    needs: ["build-base"]
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Login to GHCR
+        if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Image name
+        id: name
+        run: |
+          echo "FQ_NAME=${FQ_NAME,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3
+        with:
+          driver: docker-container
 
       - name: Build Titanoboa Dev Container
         id: build-titanoboa
         uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
         with:
-          cacheFrom: ghcr.io/ublue-os/devcontainer:latest
-          subfolder: ./src/titanoboa
+          subFolder: ./src/titanoboa
           imageName: ${{ steps.name.outputs.FQ_NAME }}
-          imageTag: titanoboa, titanoboa-${{ github.sha }}
+          imageTag: titanoboa-${{ github.sha }}-${{ matrix.arch }}
+          platform: linux/${{ matrix.arch }}
           refFilterForPush: |
             refs/heads/main
           eventFilterForPush: |
@@ -60,13 +106,27 @@ jobs:
             workflow_dispatch
             schedule
 
+
   sign:
     if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
-    needs: ["build"]
+    needs: ["build-base"]
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
+
+      - name: Lowercase Image Repo
+        id: name
+        run: |
+          echo "FQ_NAME=${FQ_NAME,,}" >> "$GITHUB_OUTPUT"
 
       - name: Login to GHCR
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
@@ -77,7 +137,49 @@ jobs:
 
       - name: Sign Dev Containers
         run: |
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${FQ_NAME,,}:${{ github.sha }}
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${FQ_NAME,,}:titanoboa-${{ github.sha }}
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.FQ_NAME }}:base-${{ github.sha }}-${{ matrix.arch }}
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ github.sha }}-${{ matrix.arch }} || true
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+
+  manifest:
+    if: github.event_name != 'pull_request'
+    needs: ["sign"]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Lowercase Image Repo
+        id: name
+        run: echo "FQ_NAME=${FQ_NAME,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Push Manifests
+        run: |
+          set -ex
+          docker manifest create ${{ steps.name.outputs.FQ_NAME }}:latest \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:base-${{ github.sha }}-amd64 \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:base-${{ github.sha }}-arm64
+          docker manifest push ${{ steps.name.outputs.FQ_NAME }}:latest
+
+          docker manifest create ${{ steps.name.outputs.FQ_NAME }}:${{ github.sha }} \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:base-${{ github.sha }}-amd64 \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:base-${{ github.sha }}-arm64
+          docker manifest push ${{ steps.name.outputs.FQ_NAME }}:${{ github.sha }}
+
+          docker manifest create ${{ steps.name.outputs.FQ_NAME }}:titanoboa \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:t itanoboa-${{ github.sha }}-amd64 \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ github.sha }}-arm64
+          docker manifest push ${{ steps.name.outputs.FQ_NAME }}:titanoboa
+
+          docker manifest create ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ github.sha }} \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ github.sha }}-amd64 \
+            --amend ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ github.sha }}-arm64
+          docker manifest push ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ github.sha }}
