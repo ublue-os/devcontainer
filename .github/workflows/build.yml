@@ -60,8 +60,6 @@ jobs:
           imageTag: titanoboa-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
           push: ${{ github.event_name != 'pull_request' }}
-          buildArgs: |
-            BASE_IMAGE=${{ steps.name.outputs.IMAGE_REPO }}:base-${{ github.sha }}-${{ matrix.arch }}
 
   sign:
     if: github.event_name != 'pull_request'
