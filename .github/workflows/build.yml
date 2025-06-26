@@ -90,12 +90,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker-container
-      
-      - name: Use base image
-        run: |
-          grep -v '^\s*//' ./src/titanoboa/.devcontainer/devcontainer.json | \
-          jq --arg img "$FQ_NAME:base-${{ github.sha }}-${{ matrix.arch }}" '.image = $img' > tmp.json \
-          && mv tmp.json ./src/titanoboa/.devcontainer/devcontainer.json
 
       - name: Build Titanoboa Dev Container
         id: build-titanoboa
