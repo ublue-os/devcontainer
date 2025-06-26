@@ -43,23 +43,23 @@ jobs:
         with:
           driver: docker-container
 
-      - name: Build and (optionally) Push with Dev Containers CLI
+      - name: Build and Push Base Dev Container
         uses: devcontainers/ci@v0.3
         with:
           subFolder: ./src/base
           imageName: ${{ steps.name.outputs.IMAGE_REPO }}
           imageTag: base-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
 
-      - name: Build and (optionally) Push Titanoboa with Dev Containers CLI
+      - name: Build and Push Titanoboa Dev Container
         uses: devcontainers/ci@v0.3
         with:
           subFolder: ./src/titanoboa
           imageName: ${{ steps.name.outputs.IMAGE_REPO }}
           imageTag: titanoboa-${{ github.sha }}-${{ matrix.arch }}
           platform: linux/${{ matrix.arch }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
 
   sign:
     if: github.event_name != 'pull_request'
