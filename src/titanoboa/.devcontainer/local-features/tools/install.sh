@@ -4,7 +4,6 @@ set -e
 
 RPMS=(
     dosfstools
-    erofs-utils
     grub2
     grub2-efi
     grub2-tools
