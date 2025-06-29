@@ -17,6 +17,7 @@ dnf5 copr -y enable ublue-os/packages
 dnf5 install -y \
     ShellCheck \
     cpp \
+    erofs-utils \
     golang-oras \
     just \
     openssl \
