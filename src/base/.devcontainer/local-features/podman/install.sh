@@ -36,6 +36,16 @@ dnf5 install -y \
     podman-remote \
     skopeo
 
+if [[ -f /usr/etc/containers/policy.json ]]; then
+    cp /usr/etc/containers/policy.json /etc/containers/policy.json
+fi
+
+cat >/etc/ublue-os-param-file.yaml <<'EOF'
+privateKeyFile: "/tmp/cosign.key"
+privateKeyPassphraseFile: "/dev/null"
+rekorURL: "https://rekor.sigstore.dev"
+EOF
+
 # Workaround timedatectl being broken for podman-machine
 cat >/usr/local/bin/timedatectl <<'EOF'
 #!/usr/bin/bash
