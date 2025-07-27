@@ -126,7 +126,7 @@ jobs:
             "vendor=Universal Blue"
             "version=${{ matrix.target == 'latest' && 'base' || 'titanoboa' }}"
           )
-          
+
           MANIFEST="$(podman manifest create ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }})"
 
           for label in "${LABELS[@]}"; do
@@ -134,8 +134,8 @@ jobs:
               podman manifest annotate --index --annotation "$label" "${MANIFEST}"
           done
 
-          podman manifest add "$MANIFEST" ${{ steps.name.outputs.FQ_NAME }}@${{ format(needs.build.outputs.digest-{0}-x86_64, matrix.target }}
-          podman manifest add "$MANIFEST" ${{ steps.name.outputs.FQ_NAME }}@${{ format(needs.build.outputs.digest-{0}-aarch64, matrix.target }}
+          podman manifest add "$MANIFEST" ${{ steps.name.outputs.FQ_NAME }}@${{ matrix.target == 'latest' && needs.build.outputs.digest-latest-x86_64 || needs.build.outputs.digest-titanoboa-x86_64 }}
+          podman manifest add "$MANIFEST" ${{ steps.name.outputs.FQ_NAME }}@${{ matrix.target == 'latest' && needs.build.outputs.digest-latest-aarch64 || needs.build.outputs.digest-titanoboa-aarch64 }}
 
           for i in {1..5}; do
               podman manifest push --all --sign-by-sigtore=/etc/ublue-os-param-file ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }} && break || sleep $(( i * 5 ));
