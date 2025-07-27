@@ -15,6 +15,11 @@ jobs:
   build:
     name: Build ${{ matrix.platform }}
     runs-on: ${{ matrix.platform == 'x86_64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    outputs:
+      digest-latest-x86_64: "steps.push.outputs.digest-latest-x86_64"
+      digest-latest-aarch64: "steps.push.outputs.digest-latest-aarch64"
+      digest-titanoboa-x86_64: "steps.push.outputs.digest-titanoboa-x86_64"
+      digest-titanoboa-aarch64: "steps.push.outputs.digest-titanoboa-aarch64"
     permissions:
       actions: read
       contents: read
@@ -43,15 +48,15 @@ jobs:
           imageTag: latest-${{ matrix.platform }}
           push: never
 
-      # - name: Build Titanoboa Dev Container
-      #   id: build-titanoboa
-      #   uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
-      #   with:
-      #     cacheFrom: ghcr.io/ublue-os/devcontainer:latest-${{ matrix.platform }}
-      #     subFolder: ./src/titanoboa
-      #     imageName: ${{ steps.name.outputs.FQ_NAME }}
-      #     imageTag: titanoboa-${{ matrix.platform }}
-      #     push: never
+      - name: Build Titanoboa Dev Container
+        id: build-titanoboa
+        uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
+        with:
+          cacheFrom: ghcr.io/ublue-os/devcontainer:latest-${{ matrix.platform }}
+          subFolder: ./src/titanoboa
+          imageName: ${{ steps.name.outputs.FQ_NAME }}
+          imageTag: titanoboa-${{ matrix.platform }}
+          push: never
 
       - name: Install Cosign
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
@@ -67,15 +72,20 @@ jobs:
 
       - name: Push to GHCR
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
+        id: push
         run: |
           skopeo copy --digestfile=/tmp/digest-latest --retry-times=5 docker-daemon:${{ steps.name.outputs.FQ_NAME }}:latest-${{ matrix.platform }} docker://${{ steps.name.outputs.FQ_NAME }}:latest-${{ matrix.platform }}
-          # skopeo copy --digestfile=/tmp/digest-titanoboa --retry-times=5 docker-daemon:${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ matrix.platform }} docker://${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ matrix.platform }}
+          skopeo copy --digestfile=/tmp/digest-titanoboa --retry-times=5 docker-daemon:${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ matrix.platform }} docker://${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ matrix.platform }}
+          echo "digest-latest=$(cat /tmp/digest-latest)" >> "$GITHUB_OUTPUT"
+          echo "digest-titanoboa=$(cat /tmp/digest-titanoboa)" >> "$GITHUB_OUTPUT"
+          echo "digest-latest-${{ matrix.platform }}=${{ steps.push.outputs.digest-latest }}" >> "$GITHUB_OUTPUT"
+          echo "digest-titanoboa-${{ matrix.platform }}=${{ steps.push.outputs.digest-titanoboa }}" >> "$GITHUB_OUTPUT"
 
       - name: Sign
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
         run: |
-          cosign sign -y --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.FQ_NAME }}@"$(cat /tmp/digest-latest)"
-          # cosign sign -y --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.FQ_NAME }}@"$(cat /tmp/digest-titanoboa)"
+          cosign sign -y --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.FQ_NAME }}@${{ steps.push.outputs.digest-latest }}
+          cosign sign -y --key env://COSIGN_PRIVATE_KEY ${{ steps.name.outputs.FQ_NAME }}@${{ steps.push.outputs.digest-titanoboa }}
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
 
@@ -89,7 +99,7 @@ jobs:
       matrix:
         target:
           - latest
-          # - titanoboa
+          - titanoboa
     container:
       image: "ghcr.io/ublue-os/devcontainer:latest-x86_64"
       options: "--privileged --volume /var/lib/containers:/var/lib/containers --security-opt seccomp=unconfined --security-opt label=disable --user 0:0"
@@ -128,12 +138,15 @@ jobs:
               podman manifest annotate --index --annotation "$label" "${MANIFEST}"
           done
 
-          podman manifest add "$MANIFEST" ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }}-x86_64
-          podman manifest add "$MANIFEST" ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }}-aarch64
+          if [[ "${{ matrix.target }}" == "latest" ]]; then
+              podman manifest add "$MANIFEST" ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-latest-x86_64 }}
+              podman manifest add "$MANIFEST" ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-latest-aarch64 }}
+          else
+              podman manifest add "$MANIFEST" ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-titanoboa-x86_64 }}
+              podman manifest add "$MANIFEST" ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-titanoboa-aarch64 }}
+          fi
 
           for i in {1..5}; do
-              podman manifest push --all --sign-by-sigstore=/etc/ublue-os-param-file.yaml ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }} && break || sleep $(( i * 5 ));
-              if [ "$i" -gt 5 ]; then
-                  exit 1
-              fi
+              podman manifest push --all --sign-by-sigstore=/etc/ublue-os-param-file.yaml ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }} && exit 0 || sleep $(( i * 5 ));
           done
+          podman manifest push --all --sign-by-sigstore=/etc/ublue-os-param-file.yaml ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }} || exit 1
