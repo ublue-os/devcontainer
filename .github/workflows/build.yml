@@ -43,7 +43,7 @@ jobs:
         id: build
         uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
         with:
-          subfolder: ./src/base
+          subFolder: ./src/base
           imageName: ${{ steps.name.outputs.FQ_NAME }}
           imageTag: latest-${{ matrix.platform }}
           push: never
@@ -52,8 +52,8 @@ jobs:
         id: build-titanoboa
         uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
         with:
-          cacheFrom: ghcr.io/ublue-os/devcontainer:latest
-          subfolder: ./src/titanoboa
+          cacheFrom: ghcr.io/ublue-os/devcontainer:latest-${{ matrix.platform }}
+          subFolder: ./src/titanoboa
           imageName: ${{ steps.name.outputs.FQ_NAME }}
           imageTag: titanoboa-${{ matrix.platform }}
           push: never
@@ -92,6 +92,7 @@ jobs:
           echo "digest-titanoboa-${{ matrix.platform }}=$(cat /tmp/digest-titanoboa)" >> $GITHUB_OUTPUT
 
   manifest-devcontainer:
+    name: DevContainer Manifest
     if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
     needs: ["build"]
     runs-on: ubuntu-24.04
@@ -147,6 +148,7 @@ jobs:
           done
 
   manifest-titanoboa:
+    name: Titanoboa Manifest
     if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
     needs: ["build"]
     runs-on: ubuntu-24.04
