@@ -17,9 +17,9 @@ jobs:
     runs-on: ${{ matrix.platform == 'x86_64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
     outputs:
       digest-latest-x86_64: ${{ steps.push.outputs.latest-digest-x86_64 }}
-      digest-titanoboa-x86_64: ${{ steps.push.outputs.latest-digest-x86_64 }}
+      digest-titanoboa-x86_64: ${{ steps.push.outputs.titanoboa-digest-x86_64 }}
       digest-latest-aarch64: ${{ steps.push.outputs.latest-digest-aarch64 }}
-      digest-titanoboa-aarch64: ${{ steps.push.outputs.latest-digest-aarch64 }}
+      digest-titanoboa-aarch64: ${{ steps.push.outputs.titanoboa-digest-aarch64 }}
     permissions:
       actions: read
       contents: read
@@ -87,8 +87,8 @@ jobs:
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
 
-  manifest-devcontainer:
-    name: DevContainer Manifest
+  manifest:
+    name: Manifest ${{ matrix.target == 'latest' && 'DevContainer' || 'Titanoboa' }}
     if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
     needs: ["build"]
     runs-on: ubuntu-24.04
@@ -125,6 +125,7 @@ jobs:
             "vendor=Universal Blue"
             "version=${{ matrix.target == 'latest' && 'base' || 'titanoboa' }}"
           )
+          
           MANIFEST="$(podman manifest create ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }})"
 
           for label in "${LABELS[@]}"; do
