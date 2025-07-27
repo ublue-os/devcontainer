@@ -125,16 +125,17 @@ jobs:
             "vendor=Universal Blue"
             "version=${{ matrix.target == 'latest' && 'base' || 'titanoboa' }}"
           )
-          if [[ "${{ matrix.target }}" == 'latest' ]]; then
-              MANIFEST="$(podman manifest create ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }} ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-latest-x86_64 }} ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-latest-aarch64 }})"
-          else
-              MANIFEST="$(podman manifest create ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }} ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-titanoboa-x86_64 }} ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-titanoboa-aarch64 }})"
-          fi
+          
+          MANIFEST="$(podman manifest create ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }})"
 
           for label in "${LABELS[@]}"; do
               echo "Applying label "${label}" to manifest"
               podman manifest annotate --index --annotation "$label" "${MANIFEST}"
           done
+
+          podman manifest add "$MANIFEST" ${{ steps.name.outputs.FQ_NAME }}@${{ matrix.target == 'latest' && needs.build.outputs.digest-latest-x86_64 || needs.build.outputs.digest-titanoboa-x86_64 }}
+          podman manifest add "$MANIFEST" ${{ steps.name.outputs.FQ_NAME }}@${{ matrix.target == 'latest' && needs.build.outputs.digest-latest-aarch64 || needs.build.outputs.digest-titanoboa-aarch64 }}
+
           for i in {1..5}; do
               podman manifest push --all --digestfile=/tmp/digest ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }} && break || sleep $(( i * 5 ));
               if [ "$i" -gt 5 ]; then
