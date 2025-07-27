@@ -132,7 +132,7 @@ jobs:
           podman manifest add "$MANIFEST" ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }}-aarch64
 
           for i in {1..5}; do
-              podman manifest push --all --sign-by-sigstore=/etc/ublue-os-param-file ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }} && break || sleep $(( i * 5 ));
+              podman manifest push --all --sign-by-sigstore=/etc/ublue-os-param-file.yaml ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }} && break || sleep $(( i * 5 ));
               if [ "$i" -gt 5 ]; then
                   exit 1
               fi
