@@ -74,7 +74,7 @@ jobs:
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
         run: |
           printf "%s" "$COSIGN_PRIVATE_KEY" > /tmp/cosign.key
-          cat >/etc/ublue-os-param-file.yaml <<'EOF'
+          sudo tee /etc/ublue-os-param-file.yaml <<'EOF'
           privateKeyFile: "/tmp/cosign.key"
           privateKeyPassphraseFile: "/dev/null"
           rekorURL: "https://rekor.sigstore.dev"
@@ -105,7 +105,7 @@ jobs:
       - name: Signing Files
         run: |
           printf "%s" "$COSIGN_PRIVATE_KEY" > /tmp/cosign.key
-          cat >/etc/ublue-os-param-file.yaml <<'EOF'
+          sudo tee /etc/ublue-os-param-file.yaml <<'EOF'
           privateKeyFile: "/tmp/cosign.key"
           privateKeyPassphraseFile: "/dev/null"
           rekorURL: "https://rekor.sigstore.dev"
@@ -161,7 +161,7 @@ jobs:
   #     - name: Signing Files
   #       run: |
   #         printf "%s" "$COSIGN_PRIVATE_KEY" > /tmp/cosign.key
-  #         cat >/etc/ublue-os-param-file.yaml <<'EOF'
+  #         sudo tee /etc/ublue-os-param-file.yaml <<'EOF'
   #         privateKeyFile: "/tmp/cosign.key"
   #         privateKeyPassphraseFile: "/dev/null"
   #         rekorURL: "https://rekor.sigstore.dev"
