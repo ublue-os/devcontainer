@@ -117,13 +117,13 @@ jobs:
       - name: Manifest
         run: |
           LABELS=(
-            "name=${{ if matrix.target == 'latest' && 'devcontainer' || 'titanoboa' }}"
+            "name=${{ matrix.target == 'latest' && 'devcontainer' || 'titanoboa' }}"
             "org.opencontainers.image.name=devcontainer"
             "org.opencontainers.image.url=https://github.com/ublue-os/devcontainer"
             "org.opencontainers.image.vendor=Universal Blue"
-            "org.opencontainers.image.version=${{ if matrix.target == 'latest' && 'base' || 'titanoboa' }}"
+            "org.opencontainers.image.version=${{ matrix.target == 'latest' && 'base' || 'titanoboa' }}"
             "vendor=Universal Blue"
-            "version=${{ if matrix.target == 'latest' && 'base' || 'titanoboa' }}"
+            "version=${{ matrix.target == 'latest' && 'base' || 'titanoboa' }}"
           )
           MANIFEST="$(podman manifest create ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }} ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-${{ matrix.target }}-x86_64 }} ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-${{ matrix.target }}-aarch64 }})"
 
