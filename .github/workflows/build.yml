@@ -48,15 +48,15 @@ jobs:
           imageTag: latest-${{ matrix.platform }}
           push: never
 
-      - name: Build Titanoboa Dev Container
-        id: build-titanoboa
-        uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
-        with:
-          cacheFrom: ghcr.io/ublue-os/devcontainer:latest-${{ matrix.platform }}
-          subFolder: ./src/titanoboa
-          imageName: ${{ steps.name.outputs.FQ_NAME }}
-          imageTag: titanoboa-${{ matrix.platform }}
-          push: never
+      # - name: Build Titanoboa Dev Container
+      #   id: build-titanoboa
+      #   uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
+      #   with:
+      #     cacheFrom: ghcr.io/ublue-os/devcontainer:latest-${{ matrix.platform }}
+      #     subFolder: ./src/titanoboa
+      #     imageName: ${{ steps.name.outputs.FQ_NAME }}
+      #     imageTag: titanoboa-${{ matrix.platform }}
+      #     push: never
 
       - name: Install Cosign
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
@@ -126,13 +126,13 @@ jobs:
       - name: Manifest
         run: |
           LABELS=(
-            "name"="devcontainer"
-            "org.opencontainers.image.name"="devcontainer"
-            "org.opencontainers.image.url"="https://github.com/ublue-os/devcontainer"
-            "org.opencontainers.image.vendor"="Universal Blue"
-            "org.opencontainers.image.version"="base"
-            "vendor"="Universal Blue"
-            "version"="base"
+            "name=devcontainer"
+            "org.opencontainers.image.name=devcontainer"
+            "org.opencontainers.image.url=https://github.com/ublue-os/devcontainer"
+            "org.opencontainers.image.vendor=Universal Blue"
+            "org.opencontainers.image.version=base"
+            "vendor=Universal Blue"
+            "version=base"
           )
           MANIFEST="$(podman manifest create ${{ steps.name.outputs.FQ_NAME }}:latest ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-latest-x86_64 }} ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-latest-aarch64 }})"
 
@@ -147,58 +147,58 @@ jobs:
               fi
           done
 
-  manifest-titanoboa:
-    name: Titanoboa Manifest
-    if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
-    needs: ["build"]
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Image name
-        id: name
-        run: |
-          echo "FQ_NAME=${FQ_NAME,,}" >> "$GITHUB_OUTPUT"
+  # manifest-titanoboa:
+  #   name: Titanoboa Manifest
+  #   if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
+  #   needs: ["build"]
+  #   runs-on: ubuntu-24.04
+  #   steps:
+  #     - name: Image name
+  #       id: name
+  #       run: |
+  #         echo "FQ_NAME=${FQ_NAME,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Signing Files
-        run: |
-          printf "%s" "$COSIGN_PRIVATE_KEY" > /tmp/cosign.key
-          cat >/etc/ublue-os-param-file.yaml <<'EOF'
-          privateKeyFile: "/tmp/cosign.key"
-          privateKeyPassphraseFile: "/dev/null"
-          rekorURL: "https://rekor.sigstore.dev"
-          EOF
-        env:
-          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+  #     - name: Signing Files
+  #       run: |
+  #         printf "%s" "$COSIGN_PRIVATE_KEY" > /tmp/cosign.key
+  #         cat >/etc/ublue-os-param-file.yaml <<'EOF'
+  #         privateKeyFile: "/tmp/cosign.key"
+  #         privateKeyPassphraseFile: "/dev/null"
+  #         rekorURL: "https://rekor.sigstore.dev"
+  #         EOF
+  #       env:
+  #         COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
 
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
+  #     - name: Install Cosign
+  #       uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
 
-      - name: Login to GHCR
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
+  #     - name: Login to GHCR
+  #       uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.actor }}
+  #         password: ${{ github.token }}
 
-      - name: Manifest
-        run: |
-          LABELS=(
-            "name"="devcontainer-titanoboa"
-            "org.opencontainers.image.name"="devcontainer-titanoboa"
-            "org.opencontainers.image.url"="https://github.com/ublue-os/devcontainer"
-            "org.opencontainers.image.vendor"="Universal Blue"
-            "org.opencontainers.image.version"="titanoboa"
-            "vendor"="Universal Blue"
-            "version"="titanoboa"
-          )
-          MANIFEST="$(podman manifest create ${{ steps.name.outputs.FQ_NAME }}:titanoboa ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-titanoboa-x86_64 }} ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-titanoboa-aarch64 }})"
+  #     - name: Manifest
+  #       run: |
+  #         LABELS=(
+  #           "name=devcontainer-titanoboa"
+  #           "org.opencontainers.image.name=devcontainer-titanoboa"
+  #           "org.opencontainers.image.url=https://github.com/ublue-os/devcontainer"
+  #           "org.opencontainers.image.vendor=Universal Blue"
+  #           "org.opencontainers.image.version=titanoboa"
+  #           "vendor=Universal Blue"
+  #           "version=titanoboa"
+  #         )
+  #         MANIFEST="$(podman manifest create ${{ steps.name.outputs.FQ_NAME }}:titanoboa ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-titanoboa-x86_64 }} ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-titanoboa-aarch64 }})"
 
-          for label in "${LABELS[@]}"; do
-              echo "Applying label "${label}" to manifest"
-              podman manifest annotate --index --annotation "$label" "${MANIFEST}"
-          done
-          for i in {1..5}; do
-              podman manifest push --all --sign-by-sigstore=/etc/ublue-os-param-file ${{ steps.name.outputs.FQ_NAME }}:titanoboa && break || sleep $(( i * 5 ));
-              if [ "$i" -gt 5 ]; then
-                  exit 1
-              fi
-          done
+  #         for label in "${LABELS[@]}"; do
+  #             echo "Applying label "${label}" to manifest"
+  #             podman manifest annotate --index --annotation "$label" "${MANIFEST}"
+  #         done
+  #         for i in {1..5}; do
+  #             podman manifest push --all --sign-by-sigstore=/etc/ublue-os-param-file ${{ steps.name.outputs.FQ_NAME }}:titanoboa && break || sleep $(( i * 5 ));
+  #             if [ "$i" -gt 5 ]; then
+  #                 exit 1
+  #             fi
+  #         done
