@@ -125,7 +125,7 @@ jobs:
             "vendor=Universal Blue"
             "version=${{ matrix.target == 'latest' && 'base' || 'titanoboa' }}"
           )
-          MANIFEST="$(podman manifest create ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }} ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-${{ matrix.target }}-x86_64 }} ${{ steps.name.outputs.FQ_NAME }}@${{ needs.build.outputs.digest-${{ matrix.target }}-aarch64 }})"
+          MANIFEST="$(podman manifest create ${{ steps.name.outputs.FQ_NAME }}:${{ matrix.target }} ${{ steps.name.outputs.FQ_NAME }}@${{ matrix.target == 'latest' && needs.build.outputs.digest-latest-x86_64 || needs.build.outputs.digest-titanoboa-x86_64 }} ${{ steps.name.outputs.FQ_NAME }}@${{ matrix.target == 'latest' && needs.build.outputs.digest-latest-aarch64 || needs.build.outputs.digest-titanoboa-aarch64 }})"
 
           for label in "${LABELS[@]}"; do
               echo "Applying label "${label}" to manifest"
