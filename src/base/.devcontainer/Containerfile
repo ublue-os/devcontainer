@@ -23,6 +23,7 @@ dnf5 install -y \
     openssl \
     python3 \
     rpm-ostree \
+    systemd-container \
     selinux-policy-targeted \
     sbsigntools \
     shfmt \
