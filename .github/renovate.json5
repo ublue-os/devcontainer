@@ -9,17 +9,8 @@
       matchManagers: [
         'dockerfile',
       ],
-      matchUpdateTypes: [
-        'digest',
-      ],
-    },
-    {
-      automerge: true,
+      matchUpdateTypes: ["minor", "patch", "pin", "digest"],
       matchFileNames: ["**/Containerfile"],
-      labels: ["dockerfile"],
-      matchUpdateTypes: [
-        'digest',
-      ],
     },
   ],
 }
