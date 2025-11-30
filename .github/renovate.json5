@@ -13,5 +13,13 @@
         'digest',
       ],
     },
+    {
+      automerge: true,
+      matchFileNames: ["**/Containerfile"],
+      labels: ["dockerfile"],
+      matchUpdateTypes: [
+        'digest',
+      ],
+    },
   ],
 }
