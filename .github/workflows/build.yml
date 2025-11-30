@@ -102,7 +102,7 @@ jobs:
                     - latest
                     - titanoboa
         container:
-            image: "ghcr.io/smcloudinthesky/devcontainer:latest-x86_64@sha256:626fac3d86f3fbc30a66520895a790843b2962f0a7a2367b3a4b1feba47a3708"
+            image: "ghcr.io/smcloudinthesky/devcontainer:latest-x86_64@sha256:3d1464c67732ecb0a19888649c7ef1d1558764b566d5b3ca9e53f29739b1136e"
             options: "--privileged --volume /var/lib/containers:/var/lib/containers --security-opt seccomp=unconfined --security-opt label=disable --user 0:0"
         steps:
             - name: Image name
