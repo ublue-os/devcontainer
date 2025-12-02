@@ -1,4 +1,4 @@
-FROM quay.io/fedora/fedora-bootc:latest@sha256:523fc801361ccb2e4b195cca9d2c8607b90fdb7a65f364253cb746e2b43258e4 AS bootc
+FROM quay.io/fedora/fedora-bootc:latest@sha256:7b9740a9cbc86ce5050c4e13dca90055ca43f50548107074ccb62e5ebbd3d5f0 AS bootc
 
 FROM quay.io/fedora/fedora:latest@sha256:334f103697c260c6fd7cd1d3722ea8408728d8f4de28e81c44270f1fca2283d8
 
