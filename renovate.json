@@ -1,0 +1,12 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": ["local>ublue-os/renovate-config"],
+    "packageRules": [
+        {
+            "automerge": true,
+            "matchManagers": ["dockerfile"],
+            "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+            "matchFileNames": ["**/Containerfile"]
+        }
+    ]
+}

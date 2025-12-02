@@ -1,0 +1,7 @@
+{
+    "name": "bluefin-devcontainer",
+    "image": "ghcr.io/smcloudinthesky/devcontainer:latest-x86_64",
+    "privileged": true,
+    "runArgs": ["--privileged"],
+    "postStartCommand": "rm -rf /run/user/1000/libpod/tmp /run/user/1000/containers"
+}
