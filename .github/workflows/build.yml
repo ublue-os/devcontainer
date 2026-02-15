@@ -77,13 +77,14 @@ jobs:
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
         id: push
         run: |
-          skopeo_container="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp --security-opt seccomp=unconfined --security-opt label=disable quay.io/skopeo/stable:latest"
-          $skopeo_container copy --digestfile=/tmp/digest-latest --retry-times=5 docker-daemon:${{ steps.name.outputs.FQ_NAME }}:latest-${{ matrix.platform }} docker://${{ steps.name.outputs.FQ_NAME }}:latest-${{ matrix.platform }}
-          $skopeo_container copy --digestfile=/tmp/digest-titanoboa --retry-times=5 docker-daemon:${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ matrix.platform }} docker://${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ matrix.platform }}
-          echo "digest-latest=$(cat /tmp/digest-latest)" >> "$GITHUB_OUTPUT"
-          echo "digest-titanoboa=$(cat /tmp/digest-titanoboa)" >> "$GITHUB_OUTPUT"
-          echo "digest-latest-${{ matrix.platform }}=$(cat /tmp/digest-latest)" >> "$GITHUB_OUTPUT"
-          echo "digest-titanoboa-${{ matrix.platform }}=$(cat /tmp/digest-titanoboa)" >> "$GITHUB_OUTPUT"
+          docker tag ${{ steps.name.outputs.FQ_NAME }}:latest ${{ steps.name.outputs.FQ_NAME }}:latest-${{ matrix.platform }}
+          docker tag ${{ steps.name.outputs.FQ_NAME }}:titanoboa ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ matrix.platform }}
+          docker push ${{ steps.name.outputs.FQ_NAME }}:latest-${{ matrix.platform }} > /tmp/digest-latest
+          docker push ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ matrix.platform }} > /tmp/digest-titanoboa
+          echo "digest-latest=$(grep digest /tmp/digest-latest | awk '{print $3}')" >> "$GITHUB_OUTPUT"
+          echo "digest-titanoboa=$(grep digest /tmp/digest-titanoboa | awk '{print $3}')" >> "$GITHUB_OUTPUT"
+          echo "digest-latest-${{ matrix.platform }}=$(grep digest /tmp/digest-latest | awk '{print $3}')" >> "$GITHUB_OUTPUT"
+          echo "digest-titanoboa-${{ matrix.platform }}=$(grep digest /tmp/digest-titanoboa | awk '{print $3}')" >> "$GITHUB_OUTPUT"
 
       - name: Sign
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
