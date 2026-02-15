@@ -1,6 +1,6 @@
-FROM quay.io/fedora/fedora-bootc:latest@sha256:e12376f80d97814ebd3ca8c908ad4184ee08f526bea291230321a8db969d777b AS bootc
+FROM quay.io/fedora/fedora-bootc:latest AS bootc
 
-FROM quay.io/fedora/fedora:latest@sha256:fe58517db6a40db0c8f7098139864258ca59fb6fdff18d0c2ae9fa4b36f88e5e
+FROM quay.io/fedora/fedora:latest
 
 ENV USERNAME="ublue"
 
@@ -36,11 +36,13 @@ dnf5 install -y \
 # syft
 curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/bin
 
+# TODO: Determine if we can use latest cosign
 # cosign
-while [[ -z "${COSIGN_VERSION:-}" ]]; do
-    COSIGN_VERSION=$(curl https://api.github.com/repos/sigstore/cosign/releases/latest | grep tag_name | cut -d : -f2 | tr -d "v\", ") || (sleep 30)
-done
-dnf5 install -y "https://github.com/sigstore/cosign/releases/latest/download/cosign-${COSIGN_VERSION}-1.$(rpm -E %_arch).rpm"
+# while [[ -z "${COSIGN_VERSION:-}" ]]; do
+#     COSIGN_VERSION=$(curl https://api.github.com/repos/sigstore/cosign/releases/latest | grep tag_name | cut -d : -f2 | tr -d "v\", ") || (sleep 30)
+# done
+# dnf5 install -y "https://github.com/sigstore/cosign/releases/latest/download/cosign-${COSIGN_VERSION}-1.$(rpm -E %_arch).rpm"
+dnf5 install -y "https://github.com/sigstore/cosign/releases/download/v2.4.1/cosign-2.4.1-1.$(rpm -E %_arch).rpm"
 
 # macadam
 if [[ "$(rpm -E %_arch)" =~ x86_64 ]]; then
