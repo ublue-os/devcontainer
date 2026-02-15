@@ -32,7 +32,7 @@ jobs:
           - aarch64
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Image name
         id: name
@@ -60,14 +60,14 @@ jobs:
 
       - name: Install Cosign
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
-        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
+        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
         # TODO: UPDATE to latest release once known good.
         with:
           cosign-release: v2.4.1
 
       - name: Login to GHCR
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
-        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -104,7 +104,7 @@ jobs:
           - latest
           - titanoboa
     container:
-      image: "ghcr.io/ublue-os/devcontainer:latest-x86_64@sha256:a91a9d33c3271ad55570c19e2b524fcf0006ec028dd68f730130e43c427db5ab"
+      image: "ghcr.io/ublue-os/devcontainer:latest-x86_64@sha256:626fac3d86f3fbc30a66520895a790843b2962f0a7a2367b3a4b1feba47a3708"
       options: "--privileged --volume /var/lib/containers:/var/lib/containers --security-opt seccomp=unconfined --security-opt label=disable --user 0:0"
     steps:
       - name: Image name
