@@ -61,6 +61,9 @@ jobs:
       - name: Install Cosign
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
         uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
+        # TODO: UPDATE to latest release once known good.
+        with:
+          cosign-release: v2.4.1
 
       - name: Login to GHCR
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
