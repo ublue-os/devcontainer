@@ -77,8 +77,6 @@ jobs:
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
         id: push
         run: |
-          docker tag ${{ steps.name.outputs.FQ_NAME }}:latest ${{ steps.name.outputs.FQ_NAME }}:latest-${{ matrix.platform }}
-          docker tag ${{ steps.name.outputs.FQ_NAME }}:titanoboa ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ matrix.platform }}
           docker push ${{ steps.name.outputs.FQ_NAME }}:latest-${{ matrix.platform }} > /tmp/digest-latest
           docker push ${{ steps.name.outputs.FQ_NAME }}:titanoboa-${{ matrix.platform }} > /tmp/digest-titanoboa
           echo "digest-latest=$(grep digest /tmp/digest-latest | awk '{print $3}')" >> "$GITHUB_OUTPUT"
