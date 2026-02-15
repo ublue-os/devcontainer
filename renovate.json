@@ -1,0 +1,29 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "local>ublue-os/renovate-config"
+  ],
+  "packageRules": [
+    {
+      "automerge": true,
+      "groupName": "Containerfile Digest",
+      "matchPackageNames": [
+        "quay.io/fedora/fedora-bootc",
+        "quay.io/fedora/fedora"
+      ],
+      "matchUpdateTypes": [
+        "pin", "digest", "pinDigest", "major", "minor", "patch"
+      ]
+    },
+    {
+      "automerge": true,
+      "groupName": "Github Actions",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "pin", "digest", "pinDigest", "major", "minor", "patch"
+      ]
+    }
+  ]
+}
