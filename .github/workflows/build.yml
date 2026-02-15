@@ -32,7 +32,7 @@ jobs:
           - aarch64
     steps:
       - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Image name
         id: name
@@ -60,7 +60,7 @@ jobs:
 
       - name: Install Cosign
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
-        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
         # TODO: UPDATE to latest release once known good.
         with:
           cosign-release: v2.4.1
