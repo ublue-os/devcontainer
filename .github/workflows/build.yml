@@ -104,7 +104,7 @@ jobs:
           - latest
           - titanoboa
     container:
-      image: "ghcr.io/ublue-os/devcontainer:latest-x86_64@sha256:167a856ca1ca7e9e00074db98166cbf9b5c51c70648eb9c8bee6a2ab654bc8ee"
+      image: "ghcr.io/ublue-os/devcontainer:latest-x86_64@sha256:d6bea7f13a2771dd2ae2a46860219eb98048cb2b14246dfb76fecdfb1b79907e"
       options: "--privileged --volume /var/lib/containers:/var/lib/containers --security-opt seccomp=unconfined --security-opt label=disable --user 0:0"
     steps:
       - name: Image name
