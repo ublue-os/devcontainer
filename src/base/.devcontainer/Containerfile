@@ -1,6 +1,6 @@
-FROM quay.io/fedora/fedora-bootc:latest@sha256:66a119b56c1948d1d4eb5bd1fc087206966ad2602da8b06c28a6fdd1eb741067 AS bootc
+FROM quay.io/fedora/fedora-bootc:latest@sha256:704dd81ddbed5b8f02caff7a83e22ed8b17ef7d3765cc76162a7f3f139488a70 AS bootc
 
-FROM quay.io/fedora/fedora:latest@sha256:6f78427c5dfeda0a4808e80556517711f3ab1eb2a1eb7ab25f5e04115aecd8fb
+FROM quay.io/fedora/fedora:latest@sha256:4186e8783a58a6cacca2c4dd2bcd5caf6bdeda2e00115781a6deb9a2315bc82d
 
 ENV USERNAME="ublue"
 
