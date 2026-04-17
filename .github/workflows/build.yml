@@ -41,7 +41,7 @@ jobs:
 
       - name: Build Dev Container
         id: build
-        uses: devcontainers/ci@19ddf8c5778961129f90613da69436820ba5e0d9 # v0.3
+        uses: devcontainers/ci@b63b30de439b47a52267f241112c5b453b673db5 # v0.3
         with:
           subFolder: ./src/base
           imageName: ${{ steps.name.outputs.FQ_NAME }}
@@ -50,7 +50,7 @@ jobs:
 
       - name: Build Titanoboa Dev Container
         id: build-titanoboa
-        uses: devcontainers/ci@19ddf8c5778961129f90613da69436820ba5e0d9 # v0.3
+        uses: devcontainers/ci@b63b30de439b47a52267f241112c5b453b673db5 # v0.3
         with:
           cacheFrom: ghcr.io/ublue-os/devcontainer:latest-${{ matrix.platform }}
           subFolder: ./src/titanoboa
