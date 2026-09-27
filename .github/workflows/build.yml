@@ -32,7 +32,7 @@ jobs:
           - aarch64
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Image name
         id: name
@@ -63,7 +63,7 @@ jobs:
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         # TODO: UPDATE to latest release once known good.
         with:
-          cosign-release: v2.4.1
+          cosign-release: v3.1.3
 
       - name: Login to GHCR
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
