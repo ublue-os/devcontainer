@@ -41,7 +41,7 @@ jobs:
 
       - name: Build Dev Container
         id: build
-        uses: devcontainers/ci@b63b30de439b47a52267f241112c5b453b673db5 # v0.3
+        uses: devcontainers/ci@513af61f4de4f75d37e4438f184ba4358f0fc1ca # v0.3
         with:
           subFolder: ./src/base
           imageName: ${{ steps.name.outputs.FQ_NAME }}
@@ -50,7 +50,7 @@ jobs:
 
       - name: Build Titanoboa Dev Container
         id: build-titanoboa
-        uses: devcontainers/ci@b63b30de439b47a52267f241112c5b453b673db5 # v0.3
+        uses: devcontainers/ci@513af61f4de4f75d37e4438f184ba4358f0fc1ca # v0.3
         with:
           cacheFrom: ghcr.io/ublue-os/devcontainer:latest-${{ matrix.platform }}
           subFolder: ./src/titanoboa
@@ -67,7 +67,7 @@ jobs:
 
       - name: Login to GHCR
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -104,7 +104,7 @@ jobs:
           - latest
           - titanoboa
     container:
-      image: "ghcr.io/ublue-os/devcontainer:latest-x86_64@sha256:c4f4121cea20683ded8385015879a1d78484d18d9e511165677f5738c23f81cd"
+      image: "ghcr.io/ublue-os/devcontainer:latest-x86_64@sha256:e4b1c8e543dc54c0e9f94d6676b0fbb797e1fca2e2b21aa93ba2c60cc6299c13"
       options: "--privileged --volume /var/lib/containers:/var/lib/containers --security-opt seccomp=unconfined --security-opt label=disable --user 0:0"
     steps:
       - name: Image name
