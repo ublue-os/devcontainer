@@ -63,7 +63,7 @@ jobs:
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         # TODO: UPDATE to latest release once known good.
         with:
-          cosign-release: v3.1.3
+          cosign-release: v3.1.4
 
       - name: Login to GHCR
         if: contains(fromJson('["workflow_dispatch", "merge_group", "schedule"]'), github.event_name)
