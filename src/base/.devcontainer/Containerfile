@@ -38,8 +38,16 @@ dnf5 install -y \
 curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/bin
 
 # shfmt
+if [[ "$(rpm -E %_arch)" =~ x86_64 ]]; then
 curl -sSfL -o /usr/bin/shfmt \
     https://github.com/patrickvane/shfmt/releases/download/master/shfmt_linux_amd64
+elif if [[ "$(rpm -E %_arch)" =~ x86_64 ]]; then
+    curl -sSfL -o /usr/bin/shfmt \
+    https://github.com/patrickvane/shfmt/releases/download/master/shfmt_linux_amd64
+else
+    echo "Unsupported Arch" >&2
+    exit 1
+fi
 chmod +x /usr/bin/shfmt
 
 # TODO: Determine if we can use latest cosign
