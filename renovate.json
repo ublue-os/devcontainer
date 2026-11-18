@@ -5,15 +5,12 @@
   ],
   "packageRules": [
     {
-      "automerge": true,
-      "groupName": "Containerfile Digest",
+      "description": "Ignore updates for Fedora base container images",
       "matchPackageNames": [
         "quay.io/fedora/fedora-bootc",
         "quay.io/fedora/fedora"
       ],
-      "matchUpdateTypes": [
-        "pin", "digest", "pinDigest", "major", "minor", "patch"
-      ]
+      "enabled": false
     },
     {
       "automerge": true,
