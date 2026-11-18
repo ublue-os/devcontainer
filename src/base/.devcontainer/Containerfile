@@ -43,7 +43,7 @@ curl -sSfL -o /usr/bin/shfmt \
     https://github.com/patrickvane/shfmt/releases/download/master/shfmt_linux_amd64
 elif [[ "$(rpm -E %_arch)" =~ aarch64 ]]; then
     curl -sSfL -o /usr/bin/shfmt \
-    https://github.com/patrickvane/shfmt/releases/download/master/shfmt_linux_arm64
+    https://github.com/patrickvane/shfmt/releases/download/master/shfmt_linux_arm
 else
     echo "Unsupported Arch" >&2
     exit 1
