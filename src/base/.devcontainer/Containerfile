@@ -41,7 +41,7 @@ curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -
 if [[ "$(rpm -E %_arch)" =~ x86_64 ]]; then
 curl -sSfL -o /usr/bin/shfmt \
     https://github.com/patrickvane/shfmt/releases/download/master/shfmt_linux_amd64
-elif if [[ "$(rpm -E %_arch)" =~ x86_64 ]]; then
+elif [[ "$(rpm -E %_arch)" =~ x86_64 ]]; then
     curl -sSfL -o /usr/bin/shfmt \
     https://github.com/patrickvane/shfmt/releases/download/master/shfmt_linux_amd64
 else
