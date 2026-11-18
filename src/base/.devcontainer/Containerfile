@@ -1,11 +1,14 @@
 FROM quay.io/fedora/fedora-bootc:latest AS bootc
 
+FROM ghcr.io/oras-project/oras:latest AS oras
+
 FROM quay.io/fedora/fedora:latest
 
 ENV USERNAME="ublue"
 
 COPY --from=bootc --chmod=0755 /usr/libexec/bootc-base-imagectl /usr/libexec/bootc-base-imagectl
 COPY --from=bootc /usr/share/doc/bootc-base-imagectl /usr/share/doc/
+COPY --from=oras /bin/oras /usr/bin/oras
 
 RUN --mount=type=tmpfs,dst=/var \
     --mount=type=tmpfs,dst=/tmp \
@@ -18,7 +21,6 @@ dnf5 install -y \
     ShellCheck \
     cpp \
     erofs-utils \
-    golang-oras \
     just \
     openssl \
     python3 \
@@ -26,7 +28,6 @@ dnf5 install -y \
     systemd-container \
     selinux-policy-targeted \
     sbsigntools \
-    shfmt \
     socat \
     tmux \
     ublue-os-signing \
@@ -35,6 +36,19 @@ dnf5 install -y \
 
 # syft
 curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/bin
+
+# shfmt
+if [[ "$(rpm -E %_arch)" =~ x86_64 ]]; then
+curl -sSfL -o /usr/bin/shfmt \
+    https://github.com/patrickvane/shfmt/releases/download/master/shfmt_linux_amd64
+elif [[ "$(rpm -E %_arch)" =~ aarch64 ]]; then
+    curl -sSfL -o /usr/bin/shfmt \
+    https://github.com/patrickvane/shfmt/releases/download/master/shfmt_linux_arm
+else
+    echo "Unsupported Arch" >&2
+    exit 1
+fi
+chmod +x /usr/bin/shfmt
 
 # TODO: Determine if we can use latest cosign
 # cosign
