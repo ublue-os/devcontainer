@@ -1,6 +1,6 @@
 FROM quay.io/fedora/fedora-bootc:latest AS bootc
 
-FROM ghcr.io/oras-project/oras:latest AS oras
+FROM ghcr.io/oras-project/oras:latest@sha256:5fabb4e523de1781443c227fca62782a51aeacd044413c07f54dc64935d7f013 AS oras
 
 FROM quay.io/fedora/fedora:latest
 
